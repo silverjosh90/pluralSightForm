@@ -40,26 +40,42 @@
 /******/ 	return __webpack_require__(0);
 /******/ })
 /************************************************************************/
-/******/ ({
-
-/***/ 0:
+/******/ ([
+/* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Forum = __webpack_require__(1);
-	var ForumHeader = __webpack_require__(2);
+	var EventEmmiter = __webpack_require__(7);
+	var ForumDispatcher = __webpack_require__(8);
 
 	ReactDOM.render(React.createElement(Forum, null), document.getElementById('content'));
 
-/***/ },
+	var myemmiter = new EventEmmiter();
 
-/***/ 1:
+	myemmiter.on('STARTED_THE_APP', function () {
+	  console.log('started the app!');
+	});
+
+	myemmiter.on('STARTED_THE_APP', function () {
+	  console.log('started the app #2');
+	});
+
+	myemmiter.emit('STARTED_THE_APP');
+
+	ForumDispatcher.register(function (action) {
+	  console.log('received an action');
+	  console.log(action);
+	});
+
+/***/ },
+/* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var ForumHeader = __webpack_require__(2);
 	var ForumQuestion = __webpack_require__(3);
 	var ForumAnswers = __webpack_require__(4);
 	var ForumAnswer = __webpack_require__(5);
-	var ForumAddAnswers = __webpack_require__(22);
+	var ForumAddAnswers = __webpack_require__(6);
 
 	var allAnswers = {
 	  "1": {
@@ -88,11 +104,24 @@
 	  render: function () {
 	    return React.createElement(
 	      'div',
-	      null,
+	      { className: 'Container' },
 	      React.createElement(ForumHeader, null),
-	      React.createElement(ForumQuestion, null),
-	      React.createElement(ForumAnswers, { allAnswers: this.state.allAnswers }),
-	      React.createElement(ForumAddAnswers, null)
+	      React.createElement(
+	        'div',
+	        { className: 'Body' },
+	        React.createElement(ForumQuestion, null),
+	        React.createElement(ForumAnswers, { allAnswers: this.state.allAnswers })
+	      ),
+	      React.createElement(
+	        'div',
+	        null,
+	        React.createElement(
+	          'h4',
+	          null,
+	          ' Add Answer '
+	        ),
+	        React.createElement(ForumAddAnswers, null)
+	      )
 	    );
 	  }
 	});
@@ -100,8 +129,7 @@
 	module.exports = Forum;
 
 /***/ },
-
-/***/ 2:
+/* 2 */
 /***/ function(module, exports) {
 
 	var ForumHeader = React.createClass({
@@ -131,8 +159,7 @@
 	module.exports = ForumHeader;
 
 /***/ },
-
-/***/ 3:
+/* 3 */
 /***/ function(module, exports) {
 
 	
@@ -160,8 +187,7 @@
 	module.exports = ForumQuestion;
 
 /***/ },
-
-/***/ 4:
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var ForumAnswer = __webpack_require__(5);
@@ -187,8 +213,7 @@
 	module.exports = ForumAnswers;
 
 /***/ },
-
-/***/ 5:
+/* 5 */
 /***/ function(module, exports) {
 
 	
@@ -220,8 +245,7 @@
 	module.exports = ForumAnswer;
 
 /***/ },
-
-/***/ 22:
+/* 6 */
 /***/ function(module, exports) {
 
 	var ForumAddAnswers = React.createClass({
@@ -247,6 +271,69 @@
 
 	module.exports = ForumAddAnswers;
 
-/***/ }
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
 
-/******/ });
+	function EventEmmiter() {
+	  this._events = {};
+	}
+
+	EventEmmiter.prototype.on = function (type, listener) {
+	  this._events[type] = this._events[type] || [];
+	  this._events[type].push(listener);
+	};
+
+	EventEmmiter.prototype.emit = function (type) {
+	  if (this._events[type]) {
+	    this._events[type].forEach(function (listener) {
+	      listener();
+	    });
+	  }
+	};
+
+	EventEmmiter.prototype.removeListener = function (type, listener) {
+	  if (this._events[type]) {
+	    this._events[type].splice(this._events[type].indexOf(listener), 1);
+	  }
+	};
+
+	module.exports = EventEmmiter;
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Dispatcher = __webpack_require__(9);
+
+	var ForumDispatcher = new Dispatcher();
+
+	module.exports = ForumDispatcher;
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	function Dispatcher() {
+	  this._lastID = 0;
+	  this._callbacks = {};
+	}
+
+	Dispatcher.prototype.register = function (callback) {
+	  id = 'CID_' + this._lastID++;
+	  this._callbacks[id] = callback;
+	  return this.id;
+	};
+
+	Dispatcher.prototype.dispatch = function (action) {
+	  for (var id in this._callbacks) {
+	    this._callbacks[id](action);
+	  }
+	};
+
+	Dispatcher.prototype.waitFor = function (ids) {};
+
+	module.exports = Dispatcher;
+
+/***/ }
+/******/ ]);

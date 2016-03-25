@@ -29,11 +29,16 @@ var Forum = React.createClass({
   },
   render: function() {
     return(
-      <div>
+      <div className="Container">
       <ForumHeader />
+      <div className="Body">
       <ForumQuestion />
       <ForumAnswers allAnswers={this.state.allAnswers} />
+      </div>
+      <div>
+      <h4> Add Answer </h4>
       <ForumAddAnswers />
+      </div>
       </div>
     )
   }
