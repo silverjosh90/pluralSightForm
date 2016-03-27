@@ -76,6 +76,7 @@
 	var ForumAnswers = __webpack_require__(4);
 	var ForumAnswer = __webpack_require__(5);
 	var ForumAddAnswers = __webpack_require__(6);
+	var ForumDispatcher = __webpack_require__(8);
 
 	var allAnswers = {
 	  "1": {
@@ -120,9 +121,15 @@
 	          null,
 	          ' Add Answer '
 	        ),
-	        React.createElement(ForumAddAnswers, null)
+	        React.createElement(ForumAddAnswers, { onAddAnswer: this._onAddAnswer })
 	      )
 	    );
+	  },
+	  _onAddAnswer: function (answerText) {
+	    ForumDispatcher.dispatch({
+	      actionType: "FORUM_ANSWER_ADDED",
+	      newAnswer: answerText
+	    });
 	  }
 	});
 
@@ -193,18 +200,24 @@
 	var ForumAnswer = __webpack_require__(5);
 
 	var ForumAnswers = React.createClass({
-	  displayName: "ForumAnswers",
+	  displayName: 'ForumAnswers',
 
+	  _onMarkCorrect: function () {
+	    ForumDispatcher.dispatch({
+	      actionType: 'FORUM_ANSWER_MARKED_CORRECT',
+	      id: id
+	    });
+	  },
 	  render: function () {
 	    allAnswers = this.props.allAnswers;
 	    answers = [];
 
 	    for (key in allAnswers) {
-	      answers.push(React.createElement(ForumAnswer, { key: key, id: key, answer: allAnswers[key] }));
+	      answers.push(React.createElement(ForumAnswer, { key: key, id: key, answer: allAnswers[key], onMarkCorrect: this.props._onMarkCorrect }));
 	    }
 	    return React.createElement(
-	      "div",
-	      { className: "answerBox" },
+	      'div',
+	      { className: 'answerBox' },
 	      answers
 	    );
 	  }
@@ -221,6 +234,10 @@
 	var ForumAnswer = React.createClass({
 	  displayName: "ForumAnswer",
 
+
+	  _markCorrect: function () {
+	    this.props._onMarkCorrect(this.props.id);
+	  },
 
 	  render: function () {
 	    var answer = this.props.answer;
@@ -251,6 +268,14 @@
 	var ForumAddAnswers = React.createClass({
 	  displayName: "ForumAddAnswers",
 
+	  getInitialState: function () {
+	    return {
+	      value: ''
+	    };
+	  },
+	  _addAnswer: function () {
+	    this.props.onAddAnswer(this.state.value);
+	  },
 	  render: function () {
 	    return React.createElement(
 	      "div",
@@ -258,14 +283,19 @@
 	      React.createElement(
 	        "div",
 	        { className: "col-md-12" },
-	        React.createElement("textarea", { id: "addAnswer", className: "col-md-6 col-xs-8" })
+	        React.createElement("textarea", { id: "addAnswer", className: "col-md-6 col-xs-8", onChange: this._onChange })
 	      ),
 	      React.createElement(
 	        "div",
 	        { id: "submitDiv" },
-	        React.createElement("input", { id: "submitComment", type: "button", className: "btn btn-primary", value: "submit answer" })
+	        React.createElement("input", { id: "submitComment", type: "button", className: "btn btn-primary", value: "submit answer", onClick: this._addAnswer })
 	      )
 	    );
+	  },
+	  _onChange: function (event) {
+	    this.setState({
+	      value: event.target.value
+	    });
 	  }
 	});
 

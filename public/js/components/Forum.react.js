@@ -3,6 +3,7 @@ var ForumQuestion = require('./ForumQuestion.react')
 var ForumAnswers = require('./ForumAnswers.react')
 var ForumAnswer = require('./ForumAnswer.react')
 var ForumAddAnswers = require('./ForumAddAnswers.react')
+var ForumDispatcher = require('../dispatchers/ForumDispatcher')
 
 
 var allAnswers = {
@@ -37,10 +38,16 @@ var Forum = React.createClass({
       </div>
       <div>
       <h4> Add Answer </h4>
-      <ForumAddAnswers />
+      <ForumAddAnswers onAddAnswer={this._onAddAnswer} />
       </div>
       </div>
     )
+  },
+  _onAddAnswer: function(answerText) {
+    ForumDispatcher.dispatch({
+      actionType: "FORUM_ANSWER_ADDED",
+      newAnswer: answerText
+    });
   }
 })
 

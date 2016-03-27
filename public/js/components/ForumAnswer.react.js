@@ -2,6 +2,10 @@
 
 var ForumAnswer = React.createClass({
 
+  _markCorrect: function() {
+    this.props._onMarkCorrect(this.props.id)
+  },
+
   render: function() {
     var answer=this.props.answer
     return (
