@@ -77,30 +77,25 @@
 	var ForumAnswer = __webpack_require__(5);
 	var ForumAddAnswers = __webpack_require__(6);
 	var ForumDispatcher = __webpack_require__(8);
+	var ForumStore = __webpack_require__(11);
+	var EventEmmiter = __webpack_require__(7);
 
-	var allAnswers = {
-	  "1": {
-	    body: "An old wooden warship",
-	    correct: "false"
-	  },
-	  "2": {
-	    body: "React and Flux are a tool and method for building the front end",
-	    correct: false
-	  },
-	  "3": {
-	    body: "React is a synonym for 'respond'",
-	    correct: false
-	  }
-
-	};
 	var Forum = React.createClass({
 	  displayName: 'Forum',
 
 
 	  getInitialState: function () {
 	    return {
-	      allAnswers: allAnswers
+	      allAnswers: ForumStore.getAnswers()
 	    };
+	  },
+
+	  componentDidMount: function () {
+	    ForumStore.addChangeListener(this._onChange);
+	  },
+
+	  componentWillUnmount: function () {
+	    ForumStore.removeListener(this._onChange);
 	  },
 	  render: function () {
 	    return React.createElement(
@@ -124,6 +119,10 @@
 	        React.createElement(ForumAddAnswers, { onAddAnswer: this._onAddAnswer })
 	      )
 	    );
+	  },
+
+	  _onChange: function () {
+	    this.setState({ allAnswers: ForumStore.getAnswers() });
 	  },
 	  _onAddAnswer: function (answerText) {
 	    ForumDispatcher.dispatch({
@@ -198,11 +197,12 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var ForumAnswer = __webpack_require__(5);
+	var ForumDispatcher = __webpack_require__(8);
 
 	var ForumAnswers = React.createClass({
 	  displayName: 'ForumAnswers',
 
-	  _onMarkCorrect: function () {
+	  _onMarkCorrect: function (id) {
 	    ForumDispatcher.dispatch({
 	      actionType: 'FORUM_ANSWER_MARKED_CORRECT',
 	      id: id
@@ -213,7 +213,7 @@
 	    answers = [];
 
 	    for (key in allAnswers) {
-	      answers.push(React.createElement(ForumAnswer, { key: key, id: key, answer: allAnswers[key], onMarkCorrect: this.props._onMarkCorrect }));
+	      answers.push(React.createElement(ForumAnswer, { key: key, id: key, answer: allAnswers[key], onMarkCorrect: this._onMarkCorrect }));
 	    }
 	    return React.createElement(
 	      'div',
@@ -229,31 +229,49 @@
 /* 5 */
 /***/ function(module, exports) {
 
-	
-
 	var ForumAnswer = React.createClass({
 	  displayName: "ForumAnswer",
 
 
 	  _markCorrect: function () {
-	    this.props._onMarkCorrect(this.props.id);
+	    this.props.onMarkCorrect(this.props.id);
 	  },
 
 	  render: function () {
 	    var answer = this.props.answer;
+
+	    var markAnswer;
+
+	    if (!answer.correct) {
+	      markAnswer = React.createElement(
+	        "div",
+	        { className: "pull-right" },
+	        React.createElement(
+	          "small",
+	          null,
+	          React.createElement(
+	            "a",
+	            { href: "#", onClick: this._markCorrect },
+	            " Mark as correct "
+	          ),
+	          " "
+	        )
+	      );
+	    }
+
+	    var classNames = "panel-body ";
+	    if (answer.correct) {
+	      classNames += "alert alert-success";
+	    };
+
 	    return React.createElement(
 	      "div",
 	      { className: "panel panel-default" },
 	      React.createElement(
 	        "div",
-	        { className: "panel-body" },
-	        React.createElement(
-	          "p",
-	          null,
-	          " ",
-	          answer.body,
-	          " "
-	        )
+	        { className: classNames },
+	        answer.body,
+	        markAnswer
 	      )
 	    );
 	  }
@@ -307,26 +325,23 @@
 
 	function EventEmmiter() {
 	  this._events = {};
+	  this.on = function (type, listener) {
+	    this._events[type] = this._events[type] || [];
+	    this._events[type].push(listener);
+	  };
+	  this.emit = function (type) {
+	    if (this._events[type]) {
+	      this._events[type].forEach(function (listener) {
+	        listener();
+	      });
+	    }
+	  };
+	  this.removeListener = function (type, listener) {
+	    if (this._events[type]) {
+	      this._events[type].splice(this._events[type].indexOf(listener), 1);
+	    }
+	  };
 	}
-
-	EventEmmiter.prototype.on = function (type, listener) {
-	  this._events[type] = this._events[type] || [];
-	  this._events[type].push(listener);
-	};
-
-	EventEmmiter.prototype.emit = function (type) {
-	  if (this._events[type]) {
-	    this._events[type].forEach(function (listener) {
-	      listener();
-	    });
-	  }
-	};
-
-	EventEmmiter.prototype.removeListener = function (type, listener) {
-	  if (this._events[type]) {
-	    this._events[type].splice(this._events[type].indexOf(listener), 1);
-	  }
-	};
 
 	module.exports = EventEmmiter;
 
@@ -347,23 +362,94 @@
 	function Dispatcher() {
 	  this._lastID = 0;
 	  this._callbacks = {};
+	  this.register = function (callback) {
+	    id = 'CID_' + this._lastID++;
+	    this._callbacks[id] = callback;
+	    return this.id;
+	  };
+	  this.dispatch = function (action) {
+	    for (var id in this._callbacks) {
+	      this._callbacks[id](action);
+	    }
+	  };
+	  this.waitFor = function (ids) {};
 	}
 
-	Dispatcher.prototype.register = function (callback) {
-	  id = 'CID_' + this._lastID++;
-	  this._callbacks[id] = callback;
-	  return this.id;
-	};
-
-	Dispatcher.prototype.dispatch = function (action) {
-	  for (var id in this._callbacks) {
-	    this._callbacks[id](action);
-	  }
-	};
-
-	Dispatcher.prototype.waitFor = function (ids) {};
-
 	module.exports = Dispatcher;
+
+/***/ },
+/* 10 */,
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var EventEmmiter = __webpack_require__(7);
+	var ForumDispatcher = __webpack_require__(8);
+	var answerData = {
+	  "1": {
+	    body: "An old wooden warship",
+	    correct: false
+	  },
+	  "2": {
+	    body: "React and Flux are a tool and method for building the front end",
+	    correct: false
+	  },
+	  "3": {
+	    body: "React is a synonym for 'respond'",
+	    correct: false
+	  }
+
+	};
+
+	var ForumStore = new EventEmmiter();
+
+	ForumStore.emitChange = function () {
+	  this.emit('change');
+	};
+
+	ForumStore.addChangeListener = function (listener) {
+	  this.on('change', listener);
+	};
+
+	ForumStore.getAnswers = function () {
+	  return answerData;
+	};
+
+	ForumStore.addAnswer = function (newAnswer) {
+	  answerData[Object.keys(answerData).length + 1] = {
+	    body: newAnswer,
+	    correct: false
+	  };
+	  this.emitChange();
+	};
+
+	ForumStore.markAsCorrect = function (id) {
+	  for (key in answerData) {
+	    answerData[key].correct = false;
+	  }
+
+	  answerData[id].correct = true;
+	  this.emitChange();
+	};
+
+	ForumDispatcher.register(function (action) {
+
+	  switch (action.actionType) {
+	    case 'FORUM_ANSWER_ADDED':
+	      {
+	        console.log('Answer Added!');
+	        ForumStore.addAnswer(action.newAnswer);
+	        break;
+	      }
+	    case "FORUM_ANSWER_MARKED_CORRECT":
+	      {
+	        console.log("answer marked correct!");
+	        ForumStore.markAsCorrect(action.id);
+	        break;
+	      }
+	  }
+	});
+
+	module.exports = ForumStore;
 
 /***/ }
 /******/ ]);

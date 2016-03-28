@@ -4,29 +4,24 @@ var ForumAnswers = require('./ForumAnswers.react')
 var ForumAnswer = require('./ForumAnswer.react')
 var ForumAddAnswers = require('./ForumAddAnswers.react')
 var ForumDispatcher = require('../dispatchers/ForumDispatcher')
+var ForumStore = require('../stores/ForumStore')
+var EventEmmiter = require('../eventemmiter')
 
 
-var allAnswers = {
-  "1": {
-    body: "An old wooden warship",
-    correct: "false"
-  },
-  "2": {
-    body:"React and Flux are a tool and method for building the front end",
-    correct: false
-  },
-  "3": {
-    body: "React is a synonym for 'respond'",
-    correct: false
-  }
-
-}
 var Forum = React.createClass({
 
   getInitialState: function() {
     return {
-      allAnswers: allAnswers
+      allAnswers: ForumStore.getAnswers()
     }
+  },
+
+  componentDidMount: function() {
+    ForumStore.addChangeListener(this._onChange);
+  },
+
+  componentWillUnmount: function() {
+    ForumStore.removeListener(this._onChange);
   },
   render: function() {
     return(
@@ -42,6 +37,10 @@ var Forum = React.createClass({
       </div>
       </div>
     )
+  },
+
+  _onChange: function() {
+    this.setState({allAnswers: ForumStore.getAnswers()})
   },
   _onAddAnswer: function(answerText) {
     ForumDispatcher.dispatch({
